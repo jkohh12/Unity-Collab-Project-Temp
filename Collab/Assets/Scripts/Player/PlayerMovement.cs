@@ -130,7 +130,7 @@ public class PlayerMovement : MonoBehaviour
             state = MovementState.jumping;
         }
 
-        else if(rb.velocity.y < -0.9f)
+        else if(rb.velocity.y < -1.5f)
         {
             state = MovementState.falling;
         }
