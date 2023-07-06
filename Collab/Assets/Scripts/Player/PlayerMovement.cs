@@ -11,11 +11,25 @@ public class PlayerMovement : MonoBehaviour
     private SpriteRenderer sprite;
     float directionX = 0f;
 
+
     [SerializeField] private LayerMask jumpableGround;
 
 
     [SerializeField] private float moveSpeed;
+
+    Vector2 vecGravity;
+
+    [Header("Jump Syatem")]
     [SerializeField] private float jumpForce;
+    [SerializeField] private float jumpStartTime;
+    [SerializeField] private float fallStartTime;
+    private float jumpTime;
+    private float fallTime;
+    private float jumpCounter;
+    [SerializeField] private float jumpMulitplier;
+    [SerializeField] private float fallMultiplier;
+
+    private bool isJumping;
 
     private enum MovementState { idle, running, falling, jumping };
     
@@ -25,6 +39,8 @@ public class PlayerMovement : MonoBehaviour
     // Start is called before the first frame update
     private void Start()
     {
+
+        vecGravity = new Vector2(0, -Physics2D.gravity.y);
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         sprite = GetComponent<SpriteRenderer>();
@@ -37,12 +53,54 @@ public class PlayerMovement : MonoBehaviour
         directionX = Input.GetAxisRaw("Horizontal");
         rb.velocity = new Vector2(directionX * moveSpeed, rb.velocity.y);
 
-        
+  
+
 
         if (Input.GetButtonDown("Jump") && isGrounded())
         {
+            isJumping = true;
+            jumpTime = jumpStartTime;
+            fallTime = fallStartTime;
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         }
+
+        //block of code for "mario" jump
+        if (Input.GetButton("Jump") && isJumping == true) //check for holding space key
+        {
+            jumpCounter += Time.deltaTime;
+            float t = jumpCounter / jumpTime;
+            float currentJumpM = jumpMulitplier;
+            if (jumpTime > 0)
+            {
+                if (t < 0.5f) //if half the jump time is up, the character moves upward slower.
+                {
+                    currentJumpM = jumpMulitplier * (1 - t);
+                }
+                //rb.velocity = new Vector2(rb.velocity.x, jumpMulitplier);
+                rb.velocity += vecGravity * currentJumpM * Time.deltaTime;
+                jumpTime -= Time.deltaTime;
+            }
+            else
+            {
+                isJumping = false;
+            }
+        }
+
+        if (Input.GetButtonUp("Jump")) //if the user isn't holding space, then isJumping is false, no more increase in jumpforce
+        {
+            isJumping = false;
+        }
+
+
+        if(rb.velocity.y < 0) // faster falling
+        {
+            if (fallTime > 0)
+            {
+                rb.velocity -= vecGravity * fallMultiplier * Time.deltaTime;
+                fallTime -= Time.deltaTime;
+            }
+        }
+  
         UpdateAnimationState();
 
     }
@@ -72,7 +130,7 @@ public class PlayerMovement : MonoBehaviour
             state = MovementState.jumping;
         }
 
-        else if(rb.velocity.y < -0.1f)
+        else if(rb.velocity.y < -1.5f)
         {
             state = MovementState.falling;
         }
